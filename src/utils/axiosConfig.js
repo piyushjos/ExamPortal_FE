@@ -17,7 +17,6 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -26,12 +25,10 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
       return Promise.reject(new Error('Request timeout - please try again'));
     }
     
     if (!error.response) {
-      console.error('Network error:', error);
       return Promise.reject(new Error('Network error - please check your connection'));
     }
 
@@ -39,7 +36,6 @@ axiosInstance.interceptors.response.use(
       // Handle specific error codes
       switch (error.response.status) {
         case 400:
-          console.error('Bad Request:', error.response.data);
           break;
         case 401:
           localStorage.removeItem('token');

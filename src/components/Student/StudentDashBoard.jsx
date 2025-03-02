@@ -22,14 +22,14 @@ function StudentDashboard() {
       setLoading(true);
       const [coursesResponse, examsResponse] = await Promise.all([
         api.student.getEnrolledCourses(),
-        api.student.getAvailableExams()
+        api.student.getAvailableExams(),
       ]);
-      
+
       // Ensure we have arrays even if the response is empty
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setExams(Array.isArray(examsResponse) ? examsResponse : []);
     } catch (err) {
-      console.error('Failed to load student data:', err);
+      console.error("Failed to load student data:", err);
       setError("Failed to load student data");
     } finally {
       setLoading(false);
@@ -39,7 +39,7 @@ function StudentDashboard() {
   if (loading) {
     return (
       <DashboardLayout>
-        <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Box sx={{ p: 3, textAlign: "center" }}>
           <Typography>Loading...</Typography>
         </Box>
       </DashboardLayout>
@@ -65,7 +65,9 @@ function StudentDashboard() {
             description={`${courses?.length || 0} Courses`}
             buttonText="View"
             icon={<SubjectIcon />}
-            onClick={() => {/* Implement view courses */}}
+            onClick={() => {
+              /* Implement view courses */
+            }}
             bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
           />
 
@@ -74,7 +76,9 @@ function StudentDashboard() {
             description={`${exams?.length || 0} Upcoming Exams`}
             buttonText="View"
             icon={<QuizIcon />}
-            onClick={() => {/* Implement view exams */}}
+            onClick={() => {
+              /* Implement view exams */
+            }}
             bgColor="linear-gradient(135deg, #4CAF50, #81C784)"
           />
 
@@ -83,7 +87,9 @@ function StudentDashboard() {
             description="View your exam results"
             buttonText="View"
             icon={<DetailsIcon />}
-            onClick={() => {/* Implement view results */}}
+            onClick={() => {
+              /* Implement view results */
+            }}
             bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
           />
         </Grid>
@@ -92,4 +98,4 @@ function StudentDashboard() {
   );
 }
 
-export default StudentDashboard; 
+export default StudentDashboard;

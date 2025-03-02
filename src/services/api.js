@@ -25,7 +25,6 @@ const api = {
         console.log('Login response:', response.data);
         return response.data;
       } catch (error) {
-        console.error('Login error:', error.response?.data || error.message);
         throw new Error(error.response?.data?.message || 'Login failed');
       }
     },
@@ -54,7 +53,7 @@ const api = {
         });
         return response.data;
       } catch (error) {
-        console.error('Add instructor error:', error.response?.data || error.message);
+       
         throw new Error(error.response?.data?.message || 'Failed to add instructor');
       }
     },
@@ -87,6 +86,7 @@ const api = {
     createCourse: async (courseData) => {
       try {
         const response = await axiosInstance.post('/api/instructor/courses', courseData);
+        console.log("create course===>" ,response.data)
         return response.data;
       } catch (error) {
         handleApiError(error);
@@ -132,7 +132,6 @@ const api = {
         console.log('Enrolled courses response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
-        console.error('Get enrolled courses error:', error);
         return [];
       }
     },
@@ -142,7 +141,6 @@ const api = {
         console.log('Available exams response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
-        console.error('Get available exams error:', error);
         return [];
       }
     },
