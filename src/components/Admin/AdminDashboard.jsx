@@ -75,7 +75,7 @@ function AdminDashboard() {
         </Typography>
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6} lg={3}>
+          
             <DashboardCard
               title="Add Instructor"
               description="Add a new instructor to the system"
@@ -84,9 +84,9 @@ function AdminDashboard() {
               onClick={() => setOpenAddDialog(true)}
               bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
             />
-          </Grid>
+       
 
-          <Grid item xs={12} md={6} lg={3}>
+         
             <DashboardCard
               title="Manage Instructors"
               description={`${instructors.length} Active Instructors`}
@@ -95,9 +95,9 @@ function AdminDashboard() {
               onClick={() => {/* Implement view instructors */}}
               bgColor="linear-gradient(135deg, #4CAF50, #81C784)"
             />
-          </Grid>
+         
 
-          <Grid item xs={12} md={6} lg={3}>
+         
             <DashboardCard
               title="Analytics"
               description="View system analytics"
@@ -106,7 +106,7 @@ function AdminDashboard() {
               onClick={() => {/* Implement analytics view */}}
               bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
             />
-          </Grid>
+        
         </Grid>
 
         {/* Add Instructor Dialog */}
