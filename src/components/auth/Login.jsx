@@ -12,7 +12,11 @@ import {
   Alert,
   CircularProgress,
   InputAdornment,
-  IconButton
+  IconButton,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EmailIcon from '@mui/icons-material/Email';
@@ -23,9 +27,13 @@ import SchoolIcon from '@mui/icons-material/School';
 import api from '../../services/api';
 
 function Login() {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(0); // 0 for login, 1 for register
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  // Default to STUDENT; user can change to INSTRUCTOR (Faculty)
+  const [selectedRole, setSelectedRole] = useState('STUDENT');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,37 +44,39 @@ function Login() {
     setError('');
     setEmail('');
     setPassword('');
+    setFirstName('');
+    setLastName('');
+    setSelectedRole('STUDENT');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');  // Clear previous errors
-    
+    setError('');
+
     try {
-      if (tab === 1) { // Register
+      if (tab === 1) { // Registration
         const response = await api.auth.register({
           email,
           password,
-          role: { name: "STUDENT" }  // Changed from roleName to name
+          role: selectedRole, // "STUDENT" or "INSTRUCTOR"
+          firstName,
+          lastName
         });
         if (response) {
           setTab(0);
           setError('Registration successful! Please login.');
         }
       } else { // Login
-        console.log('Attempting login with:', { email, password });  // Debug log
         const response = await api.auth.login({
           email,
           password
         });
-        
-        if (!response || !response.token) {
+        if (!response || !response.role) {
           throw new Error('Invalid login response');
         }
-
-        const { token, role } = response;
-        localStorage.setItem('token', token);
+        const { role } = response;
+        localStorage.setItem('email', response.email);
         localStorage.setItem('role', role);
 
         // Redirect based on role
@@ -85,7 +95,7 @@ function Login() {
         }
       }
     } catch (err) {
-      console.error('Auth error:', err);  // Debug log
+      console.error('Auth error:', err);
       setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
@@ -120,12 +130,12 @@ function Login() {
 
           <Tabs
             value={tab}
-            onChange={(e, newValue) => setTab(newValue)}
+            onChange={handleTabChange}
             variant="fullWidth"
             sx={{ mb: 4 }}
           >
             <Tab label="Login" />
-            <Tab label="Student Register" />
+            <Tab label="Register" />
           </Tabs>
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -173,6 +183,40 @@ function Login() {
                 ),
               }}
             />
+            {tab === 1 && (
+              <>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  label="First Name"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  label="Last Name"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="role-select-label">Register as</InputLabel>
+                  <Select
+                    labelId="role-select-label"
+                    value={selectedRole}
+                    label="Register as"
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                  >
+                    <MenuItem value="STUDENT">Student</MenuItem>
+                    <MenuItem value="INSTRUCTOR">Faculty</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            )}
             <Button
               type="submit"
               fullWidth
@@ -209,4 +253,4 @@ function Login() {
   );
 }
 
-export default Login; 
+export default Login;

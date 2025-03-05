@@ -22,7 +22,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CodeIcon from "@mui/icons-material/Code";
 
-// Add Question Dialog Component
 export const AddQuestionDialog = ({
   open,
   onClose,
@@ -44,10 +43,8 @@ export const AddQuestionDialog = ({
     ],
   });
 
-  // Handle question type change - special handling for TRUE_FALSE
   useEffect(() => {
     if (currentQuestion.type === "TRUE_FALSE") {
-      // Reset to exactly 2 options with standard values when switching to TRUE_FALSE
       setCurrentQuestion((prev) => ({
         ...prev,
         options: [
@@ -74,11 +71,9 @@ export const AddQuestionDialog = ({
   };
 
   const handleOptionChange = (id, field, value) => {
-    // For TRUE_FALSE questions, don't allow changing the text
     if (currentQuestion.type === "TRUE_FALSE" && field === "text") {
       return;
     }
-
     setCurrentQuestion({
       ...currentQuestion,
       options: currentQuestion.options.map((option) =>
@@ -109,7 +104,6 @@ export const AddQuestionDialog = ({
 
   const removeOption = (id) => {
     if (currentQuestion.options.length <= 2) return; // Minimum 2 options
-
     setCurrentQuestion({
       ...currentQuestion,
       options: currentQuestion.options.filter((option) => option.id !== id),
@@ -117,25 +111,20 @@ export const AddQuestionDialog = ({
   };
 
   const addQuestion = () => {
-    // Validate that at least one option is marked as correct
     const hasCorrectOption = currentQuestion.options.some(
       (opt) => opt.isCorrect
     );
-
     if (!hasCorrectOption) {
       alert("Please mark at least one option as correct");
       return;
     }
-
     const newQuestion = {
       ...currentQuestion,
       id: Date.now().toString(),
     };
-
     setQuestions([...questions, newQuestion]);
     console.log("Added question:", newQuestion);
-
-    // Reset form for next question
+    // Reset for next question
     setCurrentQuestion({
       text: "",
       type: "MULTIPLE_CHOICE",
@@ -153,12 +142,9 @@ export const AddQuestionDialog = ({
 
   const saveAllQuestions = async () => {
     try {
-      // Add current question if it has content
       if (currentQuestion.text.trim() !== "") {
         addQuestion();
       }
-
-      // Format questions for API
       const formattedQuestions = questions.map((q) => ({
         examId,
         questionText: q.text,
@@ -171,16 +157,10 @@ export const AddQuestionDialog = ({
           isCorrect: opt.isCorrect,
         })),
       }));
-
       console.log("All questions saved:", formattedQuestions);
-
-      // API call commented out for now
-      // await apiService.instructor.addQuestionsToExam(examId, formattedQuestions);
-
       if (onQuestionAdded) {
         onQuestionAdded(formattedQuestions);
       }
-
       onClose();
     } catch (error) {
       console.error("Failed to save questions:", error);
@@ -191,13 +171,11 @@ export const AddQuestionDialog = ({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Add Questions to Exam</DialogTitle>
-
       <DialogContent dividers>
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
             Question {questions.length + 1}
           </Typography>
-
           <TextField
             label="Question Text"
             name="text"
@@ -229,7 +207,6 @@ export const AddQuestionDialog = ({
                 <option value="TRUE_FALSE">True/False</option>
               </TextField>
             </Grid>
-
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Marks"
@@ -299,7 +276,6 @@ export const AddQuestionDialog = ({
                 </Button>
               )}
             </Box>
-
             <FormControl component="fieldset" fullWidth>
               <RadioGroup>
                 {currentQuestion.options.map((option, index) => (
@@ -323,7 +299,6 @@ export const AddQuestionDialog = ({
                       label=""
                       sx={{ mr: 0 }}
                     />
-
                     <TextField
                       value={option.text}
                       onChange={(e) =>
@@ -333,9 +308,8 @@ export const AddQuestionDialog = ({
                       fullWidth
                       size="small"
                       required
-                      disabled={currentQuestion.type === "TRUE_FALSE"} // Disable editing for True/False
+                      disabled={currentQuestion.type === "TRUE_FALSE"}
                     />
-
                     {currentQuestion.type === "MULTIPLE_CHOICE" &&
                       currentQuestion.options.length > 2 && (
                         <IconButton
@@ -350,15 +324,13 @@ export const AddQuestionDialog = ({
                 ))}
               </RadioGroup>
             </FormControl>
-
             {currentQuestion.type === "TRUE_FALSE" && (
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ mt: 1, display: "block" }}
               >
-                For True/False questions, options are fixed as "True" and
-                "False"
+                For True/False questions, options are fixed as "True" and "False"
               </Typography>
             )}
           </Box>
@@ -370,7 +342,6 @@ export const AddQuestionDialog = ({
               Added Questions ({questions.length})
             </Typography>
             <Divider sx={{ mb: 2 }} />
-
             {questions.map((question, index) => (
               <Paper elevation={1} key={question.id} sx={{ mb: 2, p: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -382,7 +353,6 @@ export const AddQuestionDialog = ({
                     {question.text.length > 60 ? "..." : ""}
                   </Typography>
                 </Box>
-
                 <Typography
                   variant="body2"
                   color="text.secondary"
@@ -395,7 +365,6 @@ export const AddQuestionDialog = ({
                   • {question.marks} mark{question.marks !== 1 ? "s" : ""}
                   {question.isCodeQuestion && " • Contains Code"}
                 </Typography>
-
                 {question.isCodeQuestion && (
                   <Paper
                     sx={{
@@ -410,7 +379,6 @@ export const AddQuestionDialog = ({
                     <pre style={{ margin: 0 }}>{question.codeSnippet}</pre>
                   </Paper>
                 )}
-
                 <Box sx={{ mt: 2 }}>
                   {question.options.map((option) => (
                     <Box
@@ -429,9 +397,7 @@ export const AddQuestionDialog = ({
                       />
                       <Typography
                         variant="body2"
-                        color={
-                          option.isCorrect ? "success.main" : "text.primary"
-                        }
+                        color={option.isCorrect ? "success.main" : "text.primary"}
                         fontWeight={option.isCorrect ? 500 : 400}
                       >
                         {option.text}

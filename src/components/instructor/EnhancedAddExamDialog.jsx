@@ -9,13 +9,17 @@ import {
   Box,
   Grid,
   Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import { DateTimePicker } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { AddQuestionDialog } from "../instructor/AddQuestionDialog";
 
-export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
+export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => {
   const [examData, setExamData] = useState({
     title: "",
     description: "",
@@ -25,9 +29,7 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
     startTime: new Date(),
     endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 1 week from now
   });
-
   const [currentStep, setCurrentStep] = useState("exam-details");
-  const [createdExamId, setCreatedExamId] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,17 +48,11 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
 
   const handleSubmitExam = async () => {
     try {
-      // Log the form data for debugging
       console.log("Exam data submitted:", examData);
-
-      // Comment out API calls for now
-      // const response = await api.instructor.createExam(examData);
-      // const newExamId = response.data.id;
-
-      // Important: Simply change the step without waiting for API
+      // Simulate exam creation and move to question adding step.
       setCurrentStep("add-questions");
 
-      // Optional: Notify parent component with the form data
+      // Optionally notify the parent component
       if (onAddExam) {
         onAddExam({
           ...examData,
@@ -81,14 +77,11 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
     setCurrentStep("exam-details");
-    setCreatedExamId(null);
-
-    // Close dialog
     onClose();
   };
 
   const handleQuestionAdded = () => {
-    // Successfully added questions
+    // After adding questions, close the dialog.
     handleClose();
   };
 
@@ -124,16 +117,29 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
             onChange={handleChange}
           />
 
-          {/* Simple text field for course ID instead of dropdown */}
-          <TextField
-            margin="dense"
-            label="Course ID"
-            name="courseId"
-            fullWidth
-            value={examData.courseId}
-            onChange={handleChange}
-            required
-          />
+          {/* Dropdown for selecting a course */}
+          <FormControl fullWidth margin="dense" required>
+            <InputLabel id="course-select-label">Select Course</InputLabel>
+            <Select
+              labelId="course-select-label"
+              name="courseId"
+              value={examData.courseId}
+              onChange={handleChange}
+              label="Select Course"
+            >
+              {courses && courses.length > 0 ? (
+                courses.map((course) => (
+                  <MenuItem key={course.id} value={course.id}>
+                    {course.name}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem value="">
+                  <em>No courses available</em>
+                </MenuItem>
+              )}
+            </Select>
+          </FormControl>
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
@@ -165,8 +171,26 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
             </Grid>
           </Grid>
 
-          {/* Add date pickers for start and end time */}
-          {/* Note: You'll need to implement date pickers based on the library you're using */}
+          {/* Date & Time Pickers */}
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DateTimePicker
+              label="Start Time"
+              value={examData.startTime}
+              onChange={(newValue) => handleDateChange("startTime", newValue)}
+              renderInput={(params) => (
+                <TextField {...params} margin="dense" fullWidth required />
+              )}
+            />
+            <DateTimePicker
+              label="End Time"
+              value={examData.endTime}
+              onChange={(newValue) => handleDateChange("endTime", newValue)}
+              renderInput={(params) => (
+                <TextField {...params} margin="dense" fullWidth required />
+              )}
+            />
+          </LocalizationProvider>
+
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             Note: After creating the exam, you'll be able to add questions.
           </Typography>
@@ -188,7 +212,7 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam }) => {
       <AddQuestionDialog
         open={open && currentStep === "add-questions"}
         onClose={handleClose}
-        examId={"temp-exam-id"} // For now just use a temp ID
+        examId={"temp-exam-id"}
         onQuestionAdded={handleQuestionAdded}
       />
     </>

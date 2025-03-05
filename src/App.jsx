@@ -5,23 +5,20 @@ import theme from "./theme";
 import Login from "./components/auth/Login";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import StudentDashboard from "./components/Student/StudentDashBoard";
-import InstructorDashboard from "./components/Instructor/InstructorDashboard";
+import InstructorDashboard from "./components/Instructor/InstructorDashBoard";
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRole }) => {
   const role = localStorage.getItem('role');
-  const token = localStorage.getItem('token');
-
-  if (!token) {
+  if (!role) {
     return <Navigate to="/" replace />;
   }
-
   if (role !== allowedRole) {
     return <Navigate to="/" replace />;
   }
-
   return children;
 };
+
 
 function App() {
   return (

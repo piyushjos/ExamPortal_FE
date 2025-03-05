@@ -50,4 +50,27 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+axiosInstance.interceptors.request.use((config) => {
+  const role = localStorage.getItem('role');
+  if (role === 'INSTRUCTOR') {
+    const email = localStorage.getItem('email');
+    config.headers['X-User-Email'] = email;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const role = localStorage.getItem('role');
+    const email = localStorage.getItem('email');
+    if (role === 'STUDENT' && email) {
+      config.headers['X-User-Email'] = email;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+
+
 export default axiosInstance; 

@@ -2,13 +2,13 @@ import axiosInstance from '../utils/axiosConfig';
 
 const handleApiError = (error) => {
   if (error.response) {
-    // Server responded with error
+    // Server responded with an error status code
     throw new Error(error.response.data?.message || 'Server error occurred');
   } else if (error.request) {
-    // Request made but no response
+    // Request made but no response was received
     throw new Error('No response from server');
   } else {
-    // Something else went wrong
+    // Something went wrong in setting up the request
     throw new Error('Error setting up request');
   }
 };
@@ -19,9 +19,8 @@ const api = {
       try {
         const response = await axiosInstance.post('/api/auth/login', {
           email: credentials.email,
-          password: credentials.password
+          password: credentials.password,
         });
-        // Log the response for debugging
         console.log('Login response:', response.data);
         return response.data;
       } catch (error) {
@@ -30,12 +29,17 @@ const api = {
     },
     register: async (userData) => {
       try {
-        // For student registration, set role automatically
-        const dataWithRole = {
-          ...userData,
-          role: { roleName: "STUDENT" }
-        };
-        const response = await axiosInstance.post('/api/auth/register', dataWithRole);
+        // Send the payload as-is. Expect userData to contain:
+        // email, password, role (a string: "STUDENT" or "INSTRUCTOR"), firstName, and lastName.
+        const response = await axiosInstance.post('/api/auth/register', userData);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    updateProfile: async (updatedData) => {
+      try {
+        const response = await axiosInstance.put('/api/auth/profile', updatedData);
         return response.data;
       } catch (error) {
         handleApiError(error);
@@ -48,12 +52,13 @@ const api = {
         console.log('Adding instructor with data:', instructorData);
         const response = await axiosInstance.post('/api/admin/instructors', {
           email: instructorData.email,
-          password: instructorData.password,
-          role: null  // Let the backend set the role
+          password: "", // Admin does not set a password
+          firstName: instructorData.firstName,
+          lastName: instructorData.lastName,
+          role: "INSTRUCTOR"
         });
         return response.data;
       } catch (error) {
-       
         throw new Error(error.response?.data?.message || 'Failed to add instructor');
       }
     },
@@ -65,9 +70,33 @@ const api = {
         handleApiError(error);
       }
     },
+    assignInstructorToCourse: async (instructorId, courseId) => {
+      try {
+        const response = await axiosInstance.put(`/api/admin/instructors/${instructorId}/assign-course/${courseId}`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    updateInstructor: async (instructorId, updatedData) => {
+      try {
+        const response = await axiosInstance.put(`/api/admin/instructors/${instructorId}`, updatedData);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
     getAllUsers: async () => {
       try {
         const response = await axiosInstance.get('/api/admin/users');
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    getInstructors: async () => {
+      try {
+        const response = await axiosInstance.get('/api/admin/instructors');
         return response.data;
       } catch (error) {
         handleApiError(error);
@@ -86,7 +115,7 @@ const api = {
     createCourse: async (courseData) => {
       try {
         const response = await axiosInstance.post('/api/instructor/courses', courseData);
-        console.log("create course===>" ,response.data)
+        console.log("Create course response:", response.data);
         return response.data;
       } catch (error) {
         handleApiError(error);
@@ -116,6 +145,22 @@ const api = {
         handleApiError(error);
       }
     },
+    updateExam: async (examId, examData) => {
+      try {
+        const response = await axiosInstance.put(`/api/instructor/exams/${examId}`, examData);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    publishExam: async (examId) => {
+      try {
+        const response = await axiosInstance.put(`/api/instructor/exams/${examId}/publish`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
     getExamResults: async (examId) => {
       try {
         const response = await axiosInstance.get(`/api/instructor/exams/${examId}/results`);
@@ -124,7 +169,24 @@ const api = {
         handleApiError(error);
       }
     },
+    getCourses: async () => {
+      try {
+        const response = await axiosInstance.get('/api/instructor/courses');
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    getEnrolledStudents: async (courseId) => {
+      try {
+        const response = await axiosInstance.get(`/api/instructor/courses/${courseId}/students`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
   },
+  
   student: {
     getEnrolledCourses: async () => {
       try {
@@ -132,7 +194,25 @@ const api = {
         console.log('Enrolled courses response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
+        // Returning empty array in case of error
         return [];
+      }
+    },
+    getAvailableCourses: async () => {
+      try {
+        const response = await axiosInstance.get('/api/students/courses/available');
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    // Add enrollInCourse function:
+    enrollInCourse: async (courseId) => {
+      try {
+        const response = await axiosInstance.post(`/api/students/courses/${courseId}/enroll`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
       }
     },
     getAvailableExams: async () => {
@@ -141,6 +221,7 @@ const api = {
         console.log('Available exams response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
+        // Returning empty array in case of error
         return [];
       }
     },
@@ -163,6 +244,43 @@ const api = {
     getResults: async () => {
       try {
         const response = await axiosInstance.get('/api/students/results');
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+  },
+
+  courses: {
+    getCourseDetails: async (courseId) => {
+      try {
+        const response = await axiosInstance.get(`/api/courses/${courseId}`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    getAllCourses: async () => {
+      try {
+        const response = await axiosInstance.get('/api/courses');
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+  },
+  questions: {
+    createQuestion: async (questionData) => {
+      try {
+        const response = await axiosInstance.post('/api/questions', questionData);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    getQuestionsByExam: async (examId) => {
+      try {
+        const response = await axiosInstance.get(`/api/questions/exam/${examId}`);
         return response.data;
       } catch (error) {
         handleApiError(error);
