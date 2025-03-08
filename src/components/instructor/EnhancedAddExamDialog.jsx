@@ -19,7 +19,12 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { AddQuestionDialog } from "../instructor/AddQuestionDialog";
 
-export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => {
+export const EnhancedAddExamDialog = ({
+  open,
+  onClose,
+  onAddExam,
+  courses,
+}) => {
   const [examData, setExamData] = useState({
     title: "",
     description: "",
@@ -27,7 +32,8 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => 
     duration: 60,
     totalMarks: 100,
     startTime: new Date(),
-    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 1 week from now
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+     // Default 1 week from now
   });
   const [currentStep, setCurrentStep] = useState("exam-details");
 
@@ -48,16 +54,21 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => 
 
   const handleSubmitExam = async () => {
     try {
-      console.log("Exam data submitted:", examData);
-      // Simulate exam creation and move to question adding step.
-      setCurrentStep("add-questions");
+      console.log("my exam data",examData)
+      const realExamId = await onAddExam(examData);
+      console.log("getting id in enhanced Add exam dialog===>", realExamId);
 
-      // Optionally notify the parent component
-      if (onAddExam) {
-        onAddExam({
+      if (realExamId) {
+        // Store the real ID
+        setExamData({
           ...examData,
-          id: "temp-" + Date.now(),
+          id: realExamId,
         });
+        // Move to question adding step
+        setCurrentStep("add-questions");
+      } else {
+        // Handle error case
+        alert("Failed to create exam. Please try again.");
       }
     } catch (error) {
       console.error("Failed to create exam:", error);
@@ -212,7 +223,7 @@ export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => 
       <AddQuestionDialog
         open={open && currentStep === "add-questions"}
         onClose={handleClose}
-        examId={"temp-exam-id"}
+        examId={examData.id}
         onQuestionAdded={handleQuestionAdded}
       />
     </>
