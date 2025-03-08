@@ -145,18 +145,27 @@ export const AddQuestionDialog = ({
       if (currentQuestion.text.trim() !== "") {
         addQuestion();
       }
-      const formattedQuestions = questions.map((q) => ({
-        examId,
-        questionText: q.text,
-        questionType: q.type,
-        marks: q.marks,
-        isCodeQuestion: q.isCodeQuestion,
-        codeSnippet: q.codeSnippet,
-        options: q.options.map((opt) => ({
-          optionText: opt.text,
-          isCorrect: opt.isCorrect,
-        })),
-      }));
+      const formattedQuestions = questions.map((q) => {
+        // Create a copy without the id field
+        const { id, ...questionWithoutId } = q;
+
+        return {
+          examId,
+          questionText: q.text,
+          questionType: q.type,
+          marks: q.marks,
+          isCodeQuestion: q.isCodeQuestion,
+          codeSnippet: q.codeSnippet,
+          options: q.options.map((opt) => {
+            // Similarly remove temporary IDs from options if they exist
+            const { id, ...optionWithoutId } = opt;
+            return {
+              optionText: opt.text,
+              isCorrect: opt.isCorrect,
+            };
+          }),
+        };
+      });
       console.log("All questions saved:", formattedQuestions);
       if (onQuestionAdded) {
         onQuestionAdded(formattedQuestions);
@@ -330,7 +339,8 @@ export const AddQuestionDialog = ({
                 color="text.secondary"
                 sx={{ mt: 1, display: "block" }}
               >
-                For True/False questions, options are fixed as "True" and "False"
+                For True/False questions, options are fixed as "True" and
+                "False"
               </Typography>
             )}
           </Box>
@@ -397,7 +407,9 @@ export const AddQuestionDialog = ({
                       />
                       <Typography
                         variant="body2"
-                        color={option.isCorrect ? "success.main" : "text.primary"}
+                        color={
+                          option.isCorrect ? "success.main" : "text.primary"
+                        }
                         fontWeight={option.isCorrect ? 500 : 400}
                       >
                         {option.text}
