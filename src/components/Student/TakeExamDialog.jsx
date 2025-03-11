@@ -35,7 +35,6 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
         setLoading(true);
         const data = await api.student.getExamDetails(examId);
         setExam(data);
-        // Set timer (duration in minutes * 60)
         setTimeLeft(data.duration * 60);
       } catch (err) {
         console.error("Failed to fetch exam details", err);
@@ -61,10 +60,19 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
 
   const handleSubmit = async () => {
     if (!exam || !exam.questions) return;
+    // Build answers array based on the randomized questions
     const answersArray = exam.questions.map(q => answers[q.id] || "");
+    // Also collect the IDs of the randomized questions
+    const randomizedQuestionIds = exam.questions.map(q => q.id);
+    // Prepare payload to send
+    const payload = {
+      examId: exam.id,
+      answers: answersArray,
+      questionIds: randomizedQuestionIds
+    };
     setSubmitting(true);
     try {
-      const resultMessage = await api.student.submitExam(exam.id, answersArray);
+      const resultMessage = await api.student.submitExam(payload);
       alert(resultMessage);
       onClose();
     } catch (err) {
@@ -74,6 +82,7 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
       setSubmitting(false);
     }
   };
+  
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -90,7 +99,11 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
         <>
           <DialogTitle>
             {exam.title}
-            <Typography variant="subtitle2" sx={{ mt: 1 }}>
+            <Typography 
+              variant="subtitle2" 
+              component="div" 
+              sx={{ mt: 1 }}
+            >
               Duration: {exam.duration} minutes | Total Score: {exam.totalScore} | Attempts Allowed: {exam.maxAttempts}
             </Typography>
           </DialogTitle>
@@ -110,7 +123,6 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
                         <Typography variant="subtitle1" gutterBottom>
                           {idx + 1}. {question.text}
                         </Typography>
-                        {/* Render code snippet if available */}
                         {question.isCodeQuestion && question.codeSnippet && (
                           <Box
                             sx={{

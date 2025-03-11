@@ -237,14 +237,15 @@ const api = {
         handleApiError(error);
       }
     },
-    submitExam: async (examId, answers) => {
+    submitExam: async (payload) => {
       try {
-        const response = await axiosInstance.post(`/api/students/exams/${examId}/submit`, answers);
+        const response = await axiosInstance.post(`/api/students/exams/${payload.examId}/submit`, payload);
         return response.data;
       } catch (error) {
         handleApiError(error);
       }
     },
+    
     getResults: async () => {
       try {
         const response = await axiosInstance.get('/api/students/results');
