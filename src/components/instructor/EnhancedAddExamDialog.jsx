@@ -6,34 +6,21 @@ import {
   DialogActions,
   Button,
   TextField,
-  Box,
   Grid,
-  Typography,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
 } from "@mui/material";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { AddQuestionDialog } from "../instructor/AddQuestionDialog";
 
-export const EnhancedAddExamDialog = ({
-  open,
-  onClose,
-  onAddExam,
-  courses,
-}) => {
+export const EnhancedAddExamDialog = ({ open, onClose, onAddExam, courses }) => {
+  // Capture only the fields: title, courseId, duration, numberOfQuestions.
   const [examData, setExamData] = useState({
     title: "",
-    description: "",
     courseId: "",
     duration: 60,
-    totalMarks: 100,
-    startTime: new Date(),
-    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-     // Default 1 week from now
+    numberOfQuestions: 0,
   });
   const [currentStep, setCurrentStep] = useState("exam-details");
 
@@ -41,33 +28,21 @@ export const EnhancedAddExamDialog = ({
     const { name, value } = e.target;
     setExamData({
       ...examData,
-      [name]: value,
-    });
-  };
-
-  const handleDateChange = (name, value) => {
-    setExamData({
-      ...examData,
-      [name]: value,
+      [name]: name === "courseId" ? Number(value) : value,
     });
   };
 
   const handleSubmitExam = async () => {
     try {
-      console.log("my exam data",examData)
-      const realExamId = await onAddExam(examData);
-      console.log("getting id in enhanced Add exam dialog===>", realExamId);
-
-      if (realExamId) {
-        // Store the real ID
-        setExamData({
-          ...examData,
-          id: realExamId,
-        });
-        // Move to question adding step
+      console.log("Exam data:", examData);
+      const response = await onAddExam(examData);
+      const createdExam = response.data || response;
+      console.log("Created exam from API:", createdExam);
+      const examId = typeof createdExam === "number" ? createdExam : createdExam.id;
+      if (examId) {
+        setExamData({ ...examData, id: examId });
         setCurrentStep("add-questions");
       } else {
-        // Handle error case
         alert("Failed to create exam. Please try again.");
       }
     } catch (error) {
@@ -77,34 +52,23 @@ export const EnhancedAddExamDialog = ({
   };
 
   const handleClose = () => {
-    // Reset state
     setExamData({
       title: "",
-      description: "",
       courseId: "",
       duration: 60,
-      totalMarks: 100,
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      numberOfQuestions: 0,
     });
     setCurrentStep("exam-details");
     onClose();
   };
 
   const handleQuestionAdded = () => {
-    // After adding questions, close the dialog.
     handleClose();
   };
 
   return (
     <>
-      {/* Exam Details Dialog */}
-      <Dialog
-        open={open && currentStep === "exam-details"}
-        onClose={handleClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={open && currentStep === "exam-details"} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>Create New Exam</DialogTitle>
         <DialogContent>
           <TextField
@@ -116,19 +80,6 @@ export const EnhancedAddExamDialog = ({
             onChange={handleChange}
             required
           />
-
-          <TextField
-            margin="dense"
-            label="Description"
-            name="description"
-            multiline
-            rows={3}
-            fullWidth
-            value={examData.description}
-            onChange={handleChange}
-          />
-
-          {/* Dropdown for selecting a course */}
           <FormControl fullWidth margin="dense" required>
             <InputLabel id="course-select-label">Select Course</InputLabel>
             <Select
@@ -151,7 +102,6 @@ export const EnhancedAddExamDialog = ({
               )}
             </Select>
           </FormControl>
-
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
               <TextField
@@ -166,66 +116,33 @@ export const EnhancedAddExamDialog = ({
                 required
               />
             </Grid>
-
             <Grid item xs={6}>
               <TextField
                 margin="dense"
-                label="Total Marks"
-                name="totalMarks"
+                label="Number of Questions"
+                name="numberOfQuestions"
                 type="number"
                 fullWidth
-                value={examData.totalMarks}
-                onChange={handleChange}
-                InputProps={{ inputProps: { min: 1 } }}
-                required
+                value={examData.numberOfQuestions || ""}
+                onChange={(e) =>
+                  setExamData({
+                    ...examData,
+                    numberOfQuestions: parseInt(e.target.value, 10) || 0,
+                  })
+                }
+                helperText="Leave blank or 0 to use all questions"
               />
             </Grid>
           </Grid>
-
-          {/* Date & Time Pickers */}
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DateTimePicker
-              label="Start Time"
-              value={examData.startTime}
-              onChange={(newValue) => handleDateChange("startTime", newValue)}
-              renderInput={(params) => (
-                <TextField {...params} margin="dense" fullWidth required />
-              )}
-            />
-            <DateTimePicker
-              label="End Time"
-              value={examData.endTime}
-              onChange={(newValue) => handleDateChange("endTime", newValue)}
-              renderInput={(params) => (
-                <TextField {...params} margin="dense" fullWidth required />
-              )}
-            />
-          </LocalizationProvider>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Note: After creating the exam, you'll be able to add questions.
-          </Typography>
         </DialogContent>
-
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            onClick={handleSubmitExam}
-            variant="contained"
-            disabled={!examData.title || !examData.courseId}
-          >
+          <Button onClick={handleSubmitExam} variant="contained" disabled={!examData.title || !examData.courseId}>
             Create Exam & Add Questions
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Question Creation Dialog */}
-      <AddQuestionDialog
-        open={open && currentStep === "add-questions"}
-        onClose={handleClose}
-        examId={examData.id}
-        onQuestionAdded={handleQuestionAdded}
-      />
+      <AddQuestionDialog open={open && currentStep === "add-questions"} onClose={handleClose} examId={examData.id} onQuestionAdded={handleQuestionAdded} />
     </>
   );
 };

@@ -5,15 +5,12 @@ import {
   Grid,
   Card,
   CardContent,
+  Button,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
   Divider,
 } from "@mui/material";
 import DashboardLayout from "../shared/DashboardLayout";
@@ -22,6 +19,8 @@ import SubjectIcon from "@mui/icons-material/Subject";
 import QuizIcon from "@mui/icons-material/Quiz";
 import DetailsIcon from "@mui/icons-material/Details";
 import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
+import TakeExamDialog from "./TakeExamDialog";
 
 function StudentDashboard() {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
@@ -30,6 +29,11 @@ function StudentDashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openEnrollDialog, setOpenEnrollDialog] = useState(false);
+  const [showExams, setShowExams] = useState(false);
+  const [selectedExam, setSelectedExam] = useState(null);
+  const [openTakeExamDialog, setOpenTakeExamDialog] = useState(false);
+
+  const navigate = useNavigate();
 
   const loadStudentData = async () => {
     try {
@@ -63,6 +67,11 @@ function StudentDashboard() {
     }
   };
 
+  const handleAttemptExam = (exam) => {
+    setSelectedExam(exam);
+    setOpenTakeExamDialog(true);
+  };
+
   if (loading) {
     return (
       <DashboardLayout title="Student Dashboard">
@@ -85,12 +94,10 @@ function StudentDashboard() {
             {error}
           </Typography>
         )}
-
         {/* Enrolled Courses Section */}
         <Typography variant="h5" sx={{ mt: 4 }}>
           Enrolled Courses
         </Typography>
-
         {enrolledCourses.length === 0 ? (
           <Typography sx={{ mt: 2 }}>You are not enrolled in any courses.</Typography>
         ) : (
@@ -115,7 +122,6 @@ function StudentDashboard() {
             ))}
           </Grid>
         )}
-
         {/* Dashboard Cards */}
         <Grid container spacing={3} sx={{ mt: 4 }}>
           <DashboardCard
@@ -131,9 +137,7 @@ function StudentDashboard() {
             description={`${availableExams.length} Upcoming Exams`}
             buttonText="View Exams"
             icon={<QuizIcon />}
-            onClick={() => {
-              // Implement navigation to exams page if desired.
-            }}
+            onClick={() => setShowExams(!showExams)}
             bgColor="linear-gradient(135deg, #4CAF50, #81C784)"
           />
           <DashboardCard
@@ -141,18 +145,48 @@ function StudentDashboard() {
             description="View your exam results"
             buttonText="View Results"
             icon={<DetailsIcon />}
-            onClick={() => {
-              // Implement navigation to exam results page if desired.
-            }}
+            onClick={() => navigate("/student/results")}
             bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
           />
         </Grid>
-
-        {/* Enrollment Dialog */}
-        <Dialog 
-          open={openEnrollDialog} 
-          onClose={() => setOpenEnrollDialog(false)} 
-          fullWidth 
+        {showExams && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h4" gutterBottom>
+              Available Exams
+            </Typography>
+            {availableExams.length === 0 ? (
+              <Typography>No exams available at the moment.</Typography>
+            ) : (
+              availableExams.map((exam) => (
+                <Box
+                  key={exam.id}
+                  sx={{
+                    mb: 2,
+                    p: 2,
+                    border: "1px solid #ccc",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="h6">{exam.title}</Typography>
+                  <Typography variant="body2">
+                    Duration: {exam.duration} minutes
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    sx={{ mt: 1 }}
+                    onClick={() => handleAttemptExam(exam)}
+                  >
+                    Attempt Exam
+                  </Button>
+                </Box>
+              ))
+            )}
+          </Box>
+        )}
+        <Dialog
+          open={openEnrollDialog}
+          onClose={() => setOpenEnrollDialog(false)}
+          fullWidth
           maxWidth="sm"
         >
           <DialogTitle>Enroll in a Course</DialogTitle>
@@ -160,34 +194,36 @@ function StudentDashboard() {
             {availableCourses.length === 0 ? (
               <Typography>No courses available for enrollment.</Typography>
             ) : (
-              <List>
-                {availableCourses.map((course) => (
-                  <React.Fragment key={course.id}>
-                    <ListItem
-                      secondaryAction={
-                        <Button 
-                          variant="contained" 
-                          onClick={() => handleEnroll(course.id)}
-                        >
-                          Enroll
-                        </Button>
-                      }
-                    >
-                      <ListItemText 
-                        primary={course.name} 
-                        secondary={course.description} 
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
+              availableCourses.map((course) => (
+                <Box
+                  key={course.id}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 1,
+                  }}
+                >
+                  <Typography>{course.name}</Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleEnroll(course.id)}
+                  >
+                    Enroll
+                  </Button>
+                </Box>
+              ))
             )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenEnrollDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
+        <TakeExamDialog
+          open={openTakeExamDialog}
+          examId={selectedExam ? selectedExam.id : null}
+          onClose={() => setOpenTakeExamDialog(false)}
+        />
       </Box>
     </DashboardLayout>
   );

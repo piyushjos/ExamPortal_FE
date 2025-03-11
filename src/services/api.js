@@ -111,6 +111,7 @@ const api = {
       }
     },
   },
+  
   instructor: {
     createCourse: async (courseData) => {
       try {
@@ -185,7 +186,16 @@ const api = {
         handleApiError(error);
       }
     },
-  },
+    // New function to fetch exams for the current instructor.
+    getMyExams: async () => {
+      try {
+        const response = await axiosInstance.get('/api/instructor/exams');
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+  },  
   
   student: {
     getEnrolledCourses: async () => {

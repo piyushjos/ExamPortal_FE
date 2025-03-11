@@ -10,15 +10,10 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Since you're not using tokens, no need to set Authorization
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 axiosInstance.interceptors.response.use(
@@ -36,11 +31,13 @@ axiosInstance.interceptors.response.use(
       // Handle specific error codes
       switch (error.response.status) {
         case 400:
+          // You might want to handle 400 errors separately if needed
           break;
         case 401:
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          window.location.href = '/';
+          // Do nothing here—do NOT remove localStorage items.
+          // If your backend returns 401 for unauthenticated requests,
+          // you can log it but avoid clearing the role.
+          console.error('Received 401 response, but not clearing localStorage because tokens are not used.');
           break;
         default:
           console.error('Server Error:', error.response.data);
@@ -50,6 +47,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Remove the interceptors for setting X-User-Email if desired or leave them if your backend requires them.
 axiosInstance.interceptors.request.use((config) => {
   const role = localStorage.getItem('role');
   if (role === 'INSTRUCTOR') {
@@ -71,6 +69,4 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
-
-export default axiosInstance; 
+export default axiosInstance;
