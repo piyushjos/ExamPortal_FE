@@ -23,8 +23,8 @@ import api from '../../services/api';
 const TakeExamDialog = ({ open, onClose, examId }) => {
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [answers, setAnswers] = useState({});  // { questionId: answer }
+  const [timeLeft, setTimeLeft] = useState(0);   // in seconds
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,6 +35,7 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
         setLoading(true);
         const data = await api.student.getExamDetails(examId);
         setExam(data);
+        // Set timer (duration in minutes * 60)
         setTimeLeft(data.duration * 60);
       } catch (err) {
         console.error("Failed to fetch exam details", err);
@@ -87,52 +88,88 @@ const TakeExamDialog = ({ open, onClose, examId }) => {
         </Box>
       ) : (
         <>
-          <DialogTitle>{exam.title}</DialogTitle>
+          <DialogTitle>
+            {exam.title}
+            <Typography variant="subtitle2" sx={{ mt: 1 }}>
+              Duration: {exam.duration} minutes | Total Score: {exam.totalScore} | Attempts Allowed: {exam.maxAttempts}
+            </Typography>
+          </DialogTitle>
           <DialogContent dividers>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">
-                Time Left: {Math.floor(timeLeft/60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}
+                Time Left: {Math.floor(timeLeft / 60).toString().padStart(2, '0')}:
+                {(timeLeft % 60).toString().padStart(2, '0')}
               </Typography>
             </Box>
             <Grid container spacing={3}>
-              {exam.questions.map((question, idx) => (
-                <Grid item xs={12} key={question.id}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle1" gutterBottom>
-                        {idx + 1}. {question.text}
-                      </Typography>
-                      {(question.questionType === "MULTIPLE_CHOICE" || question.questionType === "TRUE_FALSE") ? (
-                        <FormControl component="fieldset">
-                          <FormLabel component="legend">Select your answer:</FormLabel>
-                          <RadioGroup
+              {exam.questions && exam.questions.length > 0 ? (
+                exam.questions.map((question, idx) => (
+                  <Grid item xs={12} key={question.id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle1" gutterBottom>
+                          {idx + 1}. {question.text}
+                        </Typography>
+                        {/* Render code snippet if available */}
+                        {question.isCodeQuestion && question.codeSnippet && (
+                          <Box
+                            sx={{
+                              backgroundColor: '#f5f5f5',
+                              p: 2,
+                              borderRadius: 1,
+                              fontFamily: 'monospace',
+                              whiteSpace: 'pre-wrap',
+                              mb: 2,
+                            }}
+                          >
+                            {question.codeSnippet}
+                          </Box>
+                        )}
+                        {question.options ? (
+                          <FormControl component="fieldset">
+                            <FormLabel component="legend">Select your answer:</FormLabel>
+                            <RadioGroup
+                              value={answers[question.id] || ""}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            >
+                              {(() => {
+                                let optionsArr = [];
+                                try {
+                                  optionsArr =
+                                    typeof question.options === "string"
+                                      ? JSON.parse(question.options)
+                                      : question.options;
+                                } catch (err) {
+                                  console.error("Failed to parse options:", err);
+                                }
+                                return optionsArr.map((opt, index) => (
+                                  <FormControlLabel
+                                    key={index}
+                                    value={opt.optionText ? opt.optionText : opt}
+                                    control={<Radio />}
+                                    label={opt.optionText ? opt.optionText : opt}
+                                  />
+                                ));
+                              })()}
+                            </RadioGroup>
+                          </FormControl>
+                        ) : (
+                          <TextField
+                            label="Your Answer"
+                            multiline
+                            rows={6}
+                            fullWidth
                             value={answers[question.id] || ""}
                             onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                          >
-                            {JSON.parse(question.options).map((opt, index) => (
-                              <FormControlLabel
-                                key={index}
-                                value={opt}
-                                control={<Radio />}
-                                label={opt}
-                              />
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                      ) : (
-                        <TextField
-                          label="Your Answer"
-                          multiline
-                          rows={6}
-                          fullWidth
-                          value={answers[question.id] || ""}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                          />
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))
+              ) : (
+                <Typography>No questions found for this exam.</Typography>
+              )}
             </Grid>
           </DialogContent>
           <DialogActions>

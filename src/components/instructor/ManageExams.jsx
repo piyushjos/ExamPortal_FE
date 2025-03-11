@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Box,
   Typography,
@@ -10,78 +10,35 @@ import {
   TableBody,
   Paper,
   Button,
-  CircularProgress,
   Chip,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
-const ManageExams = () => {
-  const [exams, setExams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  const loadExams = async () => {
-    try {
-      setLoading(true);
-      const data = await api.instructor.getMyExams();
-      setExams(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Failed to load exams:", err);
-      setError("Failed to load exams");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadExams();
-  }, []);
-
+const ManageExams = ({ exams, refreshExams }) => {
   const handlePublish = async (examId) => {
     try {
       await api.instructor.publishExam(examId);
-      loadExams();
-    } catch (err) {
-      console.error("Failed to publish exam:", err);
-      setError("Failed to publish exam");
+      refreshExams();
+    } catch (error) {
+      console.error("Failed to publish exam:", error);
     }
   };
 
   const handleUnpublish = async (examId) => {
     try {
       await api.instructor.unpublishExam(examId);
-      loadExams();
-    } catch (err) {
-      console.error("Failed to unpublish exam:", err);
-      setError("Failed to unpublish exam");
+      refreshExams();
+    } catch (error) {
+      console.error("Failed to unpublish exam:", error);
     }
   };
-
-  const handleEdit = (examId) => {
-    // Navigate to an exam edit page if implemented.
-    navigate(`/instructor/exams/edit/${examId}`);
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ textAlign: "center", p: 3 }}>
-        <CircularProgress />
-        <Typography>Loading exams...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Manage Exams
       </Typography>
-      {error && <Typography color="error">{error}</Typography>}
-      {exams.length === 0 ? (
-        <Typography>No exams found.</Typography>
-      ) : (
+      {exams && exams.length > 0 ? (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -98,18 +55,22 @@ const ManageExams = () => {
               {exams.map((exam) => (
                 <TableRow key={exam.id}>
                   <TableCell>{exam.title}</TableCell>
-                  <TableCell>{exam.course ? exam.course.name : "N/A"}</TableCell>
+                  <TableCell>{exam.course?.name || "N/A"}</TableCell>
                   <TableCell>{exam.duration}</TableCell>
                   <TableCell>{exam.numberOfQuestions || "All"}</TableCell>
                   <TableCell>
                     {exam.published ? (
                       <Chip label="Live" color="success" />
                     ) : (
-                      <Chip label="Not Live" color="default" />
+                      <Chip label="Not Live" />
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button variant="outlined" size="small" onClick={() => handleEdit(exam.id)}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => console.log("Edit exam:", exam.id)}
+                    >
                       Edit
                     </Button>
                     {exam.published ? (
@@ -137,6 +98,8 @@ const ManageExams = () => {
             </TableBody>
           </Table>
         </TableContainer>
+      ) : (
+        <Typography>No exams found.</Typography>
       )}
     </Box>
   );

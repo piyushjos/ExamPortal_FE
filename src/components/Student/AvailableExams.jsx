@@ -50,7 +50,7 @@ const AvailableExams = () => {
               <ListItem 
                 secondaryAction={
                   <Button variant="contained" onClick={() => navigate(`/student/exam/${exam.id}`)}>
-                    Take Exam
+                    Attempt Exam
                   </Button>
                 }
               >

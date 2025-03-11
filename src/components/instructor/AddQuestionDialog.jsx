@@ -21,13 +21,14 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CodeIcon from "@mui/icons-material/Code";
+import api from "../../services/api";
 
 export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({
     text: "",
     type: "MULTIPLE_CHOICE",
-    marks: 5,
+    marks: 2, // use number instead of "2"
     isCodeQuestion: false,
     codeSnippet: "",
     options: [
@@ -37,6 +38,7 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
       { id: "4", text: "", isCorrect: false },
     ],
   });
+  
 
   useEffect(() => {
     if (currentQuestion.type === "TRUE_FALSE") {
@@ -106,9 +108,7 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
   };
 
   const addQuestion = () => {
-    const hasCorrectOption = currentQuestion.options.some(
-      (opt) => opt.isCorrect
-    );
+    const hasCorrectOption = currentQuestion.options.some((opt) => opt.isCorrect);
     if (!hasCorrectOption) {
       alert("Please mark at least one option as correct");
       return;
@@ -123,7 +123,7 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
     setCurrentQuestion({
       text: "",
       type: "MULTIPLE_CHOICE",
-      marks: 5,
+      marks: 2,
       isCodeQuestion: false,
       codeSnippet: "",
       options: [
@@ -135,29 +135,38 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
     });
   };
 
+  const totalMarksAdded = questions.reduce((sum, q) => sum + Number(q.marks), 0);
+
   const saveAllQuestions = async () => {
     try {
       if (currentQuestion.text.trim() !== "") {
         addQuestion();
       }
       const formattedQuestions = questions.map((q) => {
-        // Determine the correct answer from the options
         const correctOption = q.options.find(opt => opt.isCorrect);
         return {
-          examId,
+          examId, // from props
           questionText: q.text,
           questionType: q.type,
-          marks: q.marks,
+          marks: Number(q.marks),  // Convert to a number
           isCodeQuestion: q.isCodeQuestion,
           codeSnippet: q.codeSnippet,
-          options: q.options.map((opt) => ({
-            optionText: opt.text,
-            isCorrect: opt.isCorrect,
-          })),
+          // Save options as a JSON string:
+          options: JSON.stringify(
+            q.options.map(opt => ({
+              optionText: opt.text,
+              isCorrect: opt.isCorrect,
+            }))
+          ),
           correctAnswer: correctOption ? correctOption.text : ""
         };
       });
-      console.log("All questions saved:", formattedQuestions);
+      
+      console.log("Formatted questions:", formattedQuestions);
+      // Save each question via the API
+      for (const question of formattedQuestions) {
+        await api.questions.createQuestion(question);
+      }
       if (onQuestionAdded) {
         onQuestionAdded(formattedQuestions);
       }
@@ -170,7 +179,12 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Add Questions to Exam</DialogTitle>
+      <DialogTitle>
+        Add Questions to Exam{" "}
+        <Typography variant="subtitle2" sx={{ ml: 2, display: "inline" }}>
+          Total Marks Added: {totalMarksAdded}
+        </Typography>
+      </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
@@ -248,10 +262,22 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
             />
           )}
           <Box sx={{ mt: 3 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1,
+              }}
+            >
               <Typography variant="subtitle1">Options</Typography>
               {currentQuestion.type === "MULTIPLE_CHOICE" && (
-                <Button startIcon={<AddIcon />} onClick={addOption} size="small" variant="outlined">
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={addOption}
+                  size="small"
+                  variant="outlined"
+                >
                   Add Option
                 </Button>
               )}
@@ -259,7 +285,10 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
             <FormControl component="fieldset" fullWidth>
               <RadioGroup>
                 {currentQuestion.options.map((option, index) => (
-                  <Box key={option.id} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <Box
+                    key={option.id}
+                    sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                  >
                     <FormControlLabel
                       value={option.id}
                       control={
@@ -274,7 +303,9 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
                     />
                     <TextField
                       value={option.text}
-                      onChange={(e) => handleOptionChange(option.id, "text", e.target.value)}
+                      onChange={(e) =>
+                        handleOptionChange(option.id, "text", e.target.value)
+                      }
                       placeholder={`Option ${index + 1}`}
                       fullWidth
                       size="small"
@@ -283,7 +314,11 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
                     />
                     {currentQuestion.type === "MULTIPLE_CHOICE" &&
                       currentQuestion.options.length > 2 && (
-                        <IconButton onClick={() => removeOption(option.id)} color="error" size="small">
+                        <IconButton
+                          onClick={() => removeOption(option.id)}
+                          color="error"
+                          size="small"
+                        >
                           <DeleteIcon />
                         </IconButton>
                       )}
@@ -292,51 +327,16 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
               </RadioGroup>
             </FormControl>
             {currentQuestion.type === "TRUE_FALSE" && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, display: "block" }}
+              >
                 For True/False questions, options are fixed as "True" and "False"
               </Typography>
             )}
           </Box>
         </Box>
-        {questions.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Added Questions ({questions.length})
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            {questions.map((question, index) => (
-              <Paper elevation={1} key={question.id} sx={{ mb: 2, p: 2 }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  {question.isCodeQuestion && <CodeIcon sx={{ mr: 1, color: "primary.main" }} />}
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    Question {index + 1}: {question.text.substring(0, 60)}
-                    {question.text.length > 60 ? "..." : ""}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mt: 1 }}>
-                  {question.type === "MULTIPLE_CHOICE" ? "Multiple Choice" : "True/False"}
-                  • {question.marks} mark{question.marks !== 1 ? "s" : ""}
-                  {question.isCodeQuestion && " • Contains Code"}
-                </Typography>
-                {question.isCodeQuestion && (
-                  <Paper sx={{ mt: 2, mb: 2, p: 2, backgroundColor: "#f5f5f5", fontFamily: "monospace", overflow: "auto" }}>
-                    <pre style={{ margin: 0 }}>{question.codeSnippet}</pre>
-                  </Paper>
-                )}
-                <Box sx={{ mt: 2 }}>
-                  {question.options.map((option) => (
-                    <Box key={option.id} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <Radio checked={option.isCorrect} disabled size="small" sx={{ mr: 1 }} />
-                      <Typography variant="body2" color={option.isCorrect ? "success.main" : "text.primary"} fontWeight={option.isCorrect ? 500 : 400}>
-                        {option.text}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
-            ))}
-          </Box>
-        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
@@ -350,3 +350,5 @@ export const AddQuestionDialog = ({ open, onClose, examId, onQuestionAdded }) =>
     </Dialog>
   );
 };
+
+export default AddQuestionDialog;

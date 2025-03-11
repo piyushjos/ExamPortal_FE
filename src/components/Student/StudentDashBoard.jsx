@@ -16,7 +16,6 @@ import {
 import DashboardLayout from "../shared/DashboardLayout";
 import DashboardCard from "../shared/DashboardCard";
 import SubjectIcon from "@mui/icons-material/Subject";
-import QuizIcon from "@mui/icons-material/Quiz";
 import DetailsIcon from "@mui/icons-material/Details";
 import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
@@ -26,10 +25,10 @@ function StudentDashboard() {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [availableCourses, setAvailableCourses] = useState([]);
   const [availableExams, setAvailableExams] = useState([]);
+  const [examResults, setExamResults] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openEnrollDialog, setOpenEnrollDialog] = useState(false);
-  const [showExams, setShowExams] = useState(false);
   const [selectedExam, setSelectedExam] = useState(null);
   const [openTakeExamDialog, setOpenTakeExamDialog] = useState(false);
 
@@ -41,9 +40,11 @@ function StudentDashboard() {
       const enrolled = await api.student.getEnrolledCourses();
       const exams = await api.student.getAvailableExams();
       const available = await api.student.getAvailableCourses();
+      const results = await api.student.getResults();
       setEnrolledCourses(Array.isArray(enrolled) ? enrolled : []);
       setAvailableExams(Array.isArray(exams) ? exams : []);
       setAvailableCourses(Array.isArray(available) ? available : []);
+      setExamResults(Array.isArray(results) ? results : []);
     } catch (err) {
       console.error("Failed to load student data:", err);
       setError("Failed to load student data");
@@ -68,6 +69,16 @@ function StudentDashboard() {
   };
 
   const handleAttemptExam = (exam) => {
+    // Check if a result exists for this exam—if so, do not allow reattempt
+    const existingResult = examResults.find(
+      (result) => result.exam?.id === exam.id
+    );
+    if (existingResult) {
+      alert(
+        `You have already attempted this exam. Score: ${existingResult.score}/${exam.totalScore} (${existingResult.status}).`
+      );
+      return;
+    }
     setSelectedExam(exam);
     setOpenTakeExamDialog(true);
   };
@@ -99,7 +110,9 @@ function StudentDashboard() {
           Enrolled Courses
         </Typography>
         {enrolledCourses.length === 0 ? (
-          <Typography sx={{ mt: 2 }}>You are not enrolled in any courses.</Typography>
+          <Typography sx={{ mt: 2 }}>
+            You are not enrolled in any courses.
+          </Typography>
         ) : (
           <Grid container spacing={3} sx={{ mt: 2 }}>
             {enrolledCourses.map((course) => (
@@ -122,6 +135,7 @@ function StudentDashboard() {
             ))}
           </Grid>
         )}
+
         {/* Dashboard Cards */}
         <Grid container spacing={3} sx={{ mt: 4 }}>
           <DashboardCard
@@ -133,14 +147,6 @@ function StudentDashboard() {
             bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
           />
           <DashboardCard
-            title="Available Exams"
-            description={`${availableExams.length} Upcoming Exams`}
-            buttonText="View Exams"
-            icon={<QuizIcon />}
-            onClick={() => setShowExams(!showExams)}
-            bgColor="linear-gradient(135deg, #4CAF50, #81C784)"
-          />
-          <DashboardCard
             title="Exam Results"
             description="View your exam results"
             buttonText="View Results"
@@ -149,15 +155,20 @@ function StudentDashboard() {
             bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
           />
         </Grid>
-        {showExams && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom>
-              Available Exams
-            </Typography>
-            {availableExams.length === 0 ? (
-              <Typography>No exams available at the moment.</Typography>
-            ) : (
-              availableExams.map((exam) => (
+
+        {/* Available Exams Section - Always Visible */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h4" gutterBottom>
+            Available Exams
+          </Typography>
+          {availableExams.length === 0 ? (
+            <Typography>No exams available at the moment.</Typography>
+          ) : (
+            availableExams.map((exam) => {
+              const examResult = examResults.find(
+                (result) => result.exam?.id === exam.id
+              );
+              return (
                 <Box
                   key={exam.id}
                   sx={{
@@ -171,18 +182,31 @@ function StudentDashboard() {
                   <Typography variant="body2">
                     Duration: {exam.duration} minutes
                   </Typography>
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 1 }}
-                    onClick={() => handleAttemptExam(exam)}
-                  >
-                    Attempt Exam
-                  </Button>
+                  <Typography variant="body2">
+                    Total Score: {exam.totalScore}
+                  </Typography>
+                  <Typography variant="body2">
+                    Attempts Allowed: {exam.maxAttempts}
+                  </Typography>
+                  {examResult ? (
+                    <Typography variant="body2" sx={{ color: examResult.status === "PASS" ? "green" : "red", mt: 1 }}>
+                      Score: {examResult.score}/{exam.totalScore} — {examResult.status}
+                    </Typography>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      sx={{ mt: 1 }}
+                      onClick={() => handleAttemptExam(exam)}
+                    >
+                      Attempt Exam
+                    </Button>
+                  )}
                 </Box>
-              ))
-            )}
-          </Box>
-        )}
+              );
+            })
+          )}
+        </Box>
+
         <Dialog
           open={openEnrollDialog}
           onClose={() => setOpenEnrollDialog(false)}
@@ -219,10 +243,15 @@ function StudentDashboard() {
             <Button onClick={() => setOpenEnrollDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
+
         <TakeExamDialog
           open={openTakeExamDialog}
           examId={selectedExam ? selectedExam.id : null}
-          onClose={() => setOpenTakeExamDialog(false)}
+          onClose={() => {
+            setOpenTakeExamDialog(false);
+            // Refresh student data after exam submission so that results update
+            loadStudentData();
+          }}
         />
       </Box>
     </DashboardLayout>

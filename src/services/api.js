@@ -29,8 +29,6 @@ const api = {
     },
     register: async (userData) => {
       try {
-        // Send the payload as-is. Expect userData to contain:
-        // email, password, role (a string: "STUDENT" or "INSTRUCTOR"), firstName, and lastName.
         const response = await axiosInstance.post('/api/auth/register', userData);
         return response.data;
       } catch (error) {
@@ -55,7 +53,7 @@ const api = {
           password: "", // Admin does not set a password
           firstName: instructorData.firstName,
           lastName: instructorData.lastName,
-          role: "INSTRUCTOR"
+          role: "INSTRUCTOR",
         });
         return response.data;
       } catch (error) {
@@ -72,7 +70,9 @@ const api = {
     },
     assignInstructorToCourse: async (instructorId, courseId) => {
       try {
-        const response = await axiosInstance.put(`/api/admin/instructors/${instructorId}/assign-course/${courseId}`);
+        const response = await axiosInstance.put(
+          `/api/admin/instructors/${instructorId}/assign-course/${courseId}`
+        );
         return response.data;
       } catch (error) {
         handleApiError(error);
@@ -111,7 +111,6 @@ const api = {
       }
     },
   },
-  
   instructor: {
     createCourse: async (courseData) => {
       try {
@@ -186,7 +185,6 @@ const api = {
         handleApiError(error);
       }
     },
-    // New function to fetch exams for the current instructor.
     getMyExams: async () => {
       try {
         const response = await axiosInstance.get('/api/instructor/exams');
@@ -195,8 +193,7 @@ const api = {
         handleApiError(error);
       }
     },
-  },  
-  
+  },
   student: {
     getEnrolledCourses: async () => {
       try {
@@ -204,7 +201,6 @@ const api = {
         console.log('Enrolled courses response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
-        // Returning empty array in case of error
         return [];
       }
     },
@@ -216,7 +212,6 @@ const api = {
         handleApiError(error);
       }
     },
-    // Add enrollInCourse function:
     enrollInCourse: async (courseId) => {
       try {
         const response = await axiosInstance.post(`/api/students/courses/${courseId}/enroll`);
@@ -231,7 +226,6 @@ const api = {
         console.log('Available exams response:', response.data);
         return Array.isArray(response.data) ? response.data : [];
       } catch (error) {
-        // Returning empty array in case of error
         return [];
       }
     },
@@ -260,7 +254,6 @@ const api = {
       }
     },
   },
-
   courses: {
     getCourseDetails: async (courseId) => {
       try {

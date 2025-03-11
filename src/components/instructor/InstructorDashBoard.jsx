@@ -6,40 +6,51 @@ import QuizIcon from "@mui/icons-material/Quiz";
 import SubjectIcon from "@mui/icons-material/Subject";
 import api from "../../services/api";
 import { EnhancedAddExamDialog } from "../instructor/EnhancedAddExamDialog";
-import ManageExams from "../instructor/ManageExams"; // Import the new component
+import ManageExams from "../instructor/ManageExams";
 import { useNavigate } from "react-router-dom";
 
 function InstructorDashboard() {
   const [myCourses, setMyCourses] = useState([]);
+  const [myExams, setMyExams] = useState([]);
   const [openAddExam, setOpenAddExam] = useState(false);
-  const [showManageExams, setShowManageExams] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // Load instructor's courses
   const loadCourses = async () => {
     try {
-      const response = await api.instructor.getCourses();
-      setMyCourses(Array.isArray(response) ? response : response.data || []);
+      const coursesData = await api.instructor.getCourses();
+      // coursesData is already the array from the backend
+      setMyCourses(coursesData || []);
     } catch (err) {
       console.error("Failed to load courses:", err);
       setError("Failed to load courses");
     }
   };
 
+  // Load exams created by the instructor
+  const loadExams = async () => {
+    try {
+      const examsData = await api.instructor.getMyExams();
+      console.log("Loaded exams:", examsData);
+      setMyExams(examsData || []);
+    } catch (err) {
+      console.error("Failed to load exams:", err);
+      setError("Failed to load exams");
+    }
+  };
+
   useEffect(() => {
     loadCourses();
+    loadExams();
   }, []);
 
+  // When an exam is added, reload the exams list.
   const handleAddExam = async (examData) => {
-    console.log("Exam data from dashboard:", examData);
     try {
-      const formattedExam = { ...examData };
-      console.log("Formatted exam:", formattedExam);
-      const response = await api.instructor.createExam(formattedExam);
-      const createdExam = response.data || response;
-      console.log("Created exam:", createdExam);
-      const examId = typeof createdExam === "number" ? createdExam : createdExam.id;
-      return examId;
+      const newExam = await api.instructor.createExam(examData);
+      await loadExams(); // Refresh exams list after creation.
+      return newExam.id;
     } catch (error) {
       console.error("Failed to create exam:", error);
       setError("Failed to create exam");
@@ -74,20 +85,11 @@ function InstructorDashboard() {
             onClick={() => setOpenAddExam(true)}
             bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
           />
-          <DashboardCard
-            title="Manage Exams"
-            description="View, edit, and publish/unpublish your exams"
-            buttonText="Manage Exams"
-            icon={<QuizIcon />}
-            onClick={() => setShowManageExams(!showManageExams)}
-            bgColor="linear-gradient(135deg, #FFC107, #FFD54F)"
-          />
         </Grid>
-        {showManageExams && (
-          <Box sx={{ mt: 4 }}>
-            <ManageExams />
-          </Box>
-        )}
+        {/* Always display Manage Exams */}
+        <Box sx={{ mt: 4 }}>
+          <ManageExams exams={myExams} refreshExams={loadExams} />
+        </Box>
         <EnhancedAddExamDialog
           open={openAddExam}
           onClose={() => setOpenAddExam(false)}
