@@ -9,6 +9,8 @@ import StudentDashboard from "./components/Student/StudentDashBoard";
 import AvailableExams from "./components/Student/AvailableExams";
 import TakeExam from "./components/Student/TakeExamDialog";
 import ExamResults from "./components/Student/ExamResults";
+import ManageCourses from "./components/instructor/ManageCourses";
+import CourseDetails from "./components/instructor/CourseDetails";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const role = localStorage.getItem("role");
@@ -33,10 +35,26 @@ function App() {
             }
           />
           <Route
-            path="/instructor/*"
+            path="/instructor"
             element={
               <ProtectedRoute allowedRole="INSTRUCTOR">
                 <InstructorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses"
+            element={
+              <ProtectedRoute allowedRole="INSTRUCTOR">
+                <ManageCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId"
+            element={
+              <ProtectedRoute allowedRole="INSTRUCTOR">
+                <CourseDetails />
               </ProtectedRoute>
             }
           />

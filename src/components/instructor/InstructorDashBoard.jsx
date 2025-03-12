@@ -1,39 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Grid } from "@mui/material";
+import { Box, Typography, Grid, Button } from "@mui/material";
 import DashboardLayout from "../shared/DashboardLayout";
 import DashboardCard from "../shared/DashboardCard";
-import QuizIcon from "@mui/icons-material/Quiz";
 import SubjectIcon from "@mui/icons-material/Subject";
+import QuizIcon from "@mui/icons-material/Quiz";
+import ManageCourses from "./ManageCourses";
+import CourseDetails from "./CourseDetails";
+import ManageExams from "./ManageExams";
 import api from "../../services/api";
-import { EnhancedAddExamDialog } from "../instructor/EnhancedAddExamDialog";
-import ManageExams from "../instructor/ManageExams";
-import { useNavigate } from "react-router-dom";
 
 function InstructorDashboard() {
+  // currentView can be "overview", "courses", "courseDetails", or "exams"
+  const [currentView, setCurrentView] = useState("overview");
   const [myCourses, setMyCourses] = useState([]);
   const [myExams, setMyExams] = useState([]);
-  const [openAddExam, setOpenAddExam] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
-  // Load instructor's courses
   const loadCourses = async () => {
     try {
       const coursesData = await api.instructor.getCourses();
-      // coursesData is already the array from the backend
-      setMyCourses(coursesData || []);
+      setMyCourses(Array.isArray(coursesData) ? coursesData : []);
     } catch (err) {
       console.error("Failed to load courses:", err);
       setError("Failed to load courses");
     }
   };
 
-  // Load exams created by the instructor
   const loadExams = async () => {
     try {
       const examsData = await api.instructor.getMyExams();
-      console.log("Loaded exams:", examsData);
-      setMyExams(examsData || []);
+      setMyExams(Array.isArray(examsData) ? examsData : []);
     } catch (err) {
       console.error("Failed to load exams:", err);
       setError("Failed to load exams");
@@ -45,57 +42,89 @@ function InstructorDashboard() {
     loadExams();
   }, []);
 
-  // When an exam is added, reload the exams list.
-  const handleAddExam = async (examData) => {
-    try {
-      const newExam = await api.instructor.createExam(examData);
-      await loadExams(); // Refresh exams list after creation.
-      return newExam.id;
-    } catch (error) {
-      console.error("Failed to create exam:", error);
-      setError("Failed to create exam");
+  const handleViewCourses = () => {
+    setCurrentView("courses");
+  };
+
+  const handleViewExams = () => {
+    setCurrentView("exams");
+  };
+
+  const handleBack = () => {
+    // If in courseDetails, go back to courses; otherwise, go to overview.
+    if (currentView === "courseDetails") {
+      setCurrentView("courses");
+    } else {
+      setCurrentView("overview");
+    }
+  };
+
+  const handleCourseClick = (course) => {
+    setSelectedCourse(course);
+    setCurrentView("courseDetails");
+  };
+
+  const renderContent = () => {
+    switch (currentView) {
+      case "overview":
+        return (
+          <Grid container spacing={3} sx={{ mt: 2 }}>
+            {/* <Grid item xs={12} sm={6}> */}
+              <DashboardCard
+                title="My Courses"
+                description={`${myCourses.length} Courses Assigned`}
+                buttonText="View Courses"
+                onClick={handleViewCourses}
+                bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
+              />
+            {/* </Grid> */}
+            {/* <Grid item xs={12} sm={6}> */}
+              <DashboardCard
+                title="Manage Exams"
+                description={`${myExams.length} Exams`}
+                buttonText="View Exams"
+                onClick={handleViewExams}
+                bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
+              />
+            {/* </Grid> */}
+          </Grid>
+        );
+      case "courses":
+        return <ManageCourses courses={myCourses} onCourseClick={handleCourseClick} />;
+      case "courseDetails":
+        return (
+          <Box>
+            <Button variant="outlined" onClick={handleBack} sx={{ mb: 2 }}>
+              Back to Courses
+            </Button>
+            <CourseDetails course={selectedCourse} />
+          </Box>
+        );
+      case "exams":
+        return <ManageExams exams={myExams} refreshExams={loadExams} />;
+      default:
+        return null;
     }
   };
 
   return (
     <DashboardLayout title="Instructor Dashboard">
       <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Instructor Dashboard
-        </Typography>
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
             {error}
           </Typography>
         )}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <DashboardCard
-            title="My Courses"
-            description={`${myCourses.length} Courses Assigned`}
-            buttonText="View Courses"
-            icon={<SubjectIcon />}
-            onClick={() => navigate("/instructor/courses")}
-            bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
-          />
-          <DashboardCard
-            title="Create Exam"
-            description="Create a new exam for one of your courses"
-            buttonText="Create Exam"
-            icon={<QuizIcon />}
-            onClick={() => setOpenAddExam(true)}
-            bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
-          />
-        </Grid>
-        {/* Always display Manage Exams */}
-        <Box sx={{ mt: 4 }}>
-          <ManageExams exams={myExams} refreshExams={loadExams} />
-        </Box>
-        <EnhancedAddExamDialog
-          open={openAddExam}
-          onClose={() => setOpenAddExam(false)}
-          onAddExam={handleAddExam}
-          courses={myCourses}
-        />
+        {/* Top navigation: show Back button if not in overview */}
+        {currentView !== "overview" && (
+          <Box sx={{ mb: 2 }}>
+            <Button variant="outlined" onClick={handleBack}>
+              Back to Overview
+            </Button>
+          </Box>
+        )}
+        {/* Dynamic content area */}
+        {renderContent()}
       </Box>
     </DashboardLayout>
   );

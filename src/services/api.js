@@ -193,6 +193,14 @@ const api = {
         handleApiError(error);
       }
     },
+    getExamsByCourse: async (courseId) => {
+      try {
+        const response = await axiosInstance.get(`/api/instructor/courses/${courseId}/exams`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
   },
   student: {
     getEnrolledCourses: async () => {
