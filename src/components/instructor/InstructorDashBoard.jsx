@@ -2,20 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Grid, Button } from "@mui/material";
 import DashboardLayout from "../shared/DashboardLayout";
 import DashboardCard from "../shared/DashboardCard";
-import SubjectIcon from "@mui/icons-material/Subject";
-import QuizIcon from "@mui/icons-material/Quiz";
 import ManageCourses from "./ManageCourses";
 import CourseDetails from "./CourseDetails";
 import ManageExams from "./ManageExams";
+import { EnhancedAddExamDialog } from "./EnhancedAddExamDialog";
 import api from "../../services/api";
 
 function InstructorDashboard() {
-  // currentView can be "overview", "courses", "courseDetails", or "exams"
   const [currentView, setCurrentView] = useState("overview");
   const [myCourses, setMyCourses] = useState([]);
   const [myExams, setMyExams] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [error, setError] = useState("");
+  const [openAddExam, setOpenAddExam] = useState(false);
 
   const loadCourses = async () => {
     try {
@@ -42,16 +41,12 @@ function InstructorDashboard() {
     loadExams();
   }, []);
 
-  const handleViewCourses = () => {
-    setCurrentView("courses");
-  };
-
-  const handleViewExams = () => {
-    setCurrentView("exams");
+  const handleCourseClick = (course) => {
+    setSelectedCourse(course);
+    setCurrentView("courseDetails");
   };
 
   const handleBack = () => {
-    // If in courseDetails, go back to courses; otherwise, go to overview.
     if (currentView === "courseDetails") {
       setCurrentView("courses");
     } else {
@@ -59,34 +54,35 @@ function InstructorDashboard() {
     }
   };
 
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course);
-    setCurrentView("courseDetails");
-  };
-
   const renderContent = () => {
     switch (currentView) {
       case "overview":
         return (
           <Grid container spacing={3} sx={{ mt: 2 }}>
-            {/* <Grid item xs={12} sm={6}> */}
+            
               <DashboardCard
                 title="My Courses"
                 description={`${myCourses.length} Courses Assigned`}
                 buttonText="View Courses"
-                onClick={handleViewCourses}
+                onClick={() => setCurrentView("courses")}
                 bgColor="linear-gradient(135deg, #2196F3, #64B5F6)"
               />
-            {/* </Grid> */}
-            {/* <Grid item xs={12} sm={6}> */}
+            
               <DashboardCard
                 title="Manage Exams"
                 description={`${myExams.length} Exams`}
                 buttonText="View Exams"
-                onClick={handleViewExams}
+                onClick={() => setCurrentView("exams")}
                 bgColor="linear-gradient(135deg, #FF9800, #FFB74D)"
               />
-            {/* </Grid> */}
+            
+              <DashboardCard
+                title="Create Exam"
+                description="Add a new exam"
+                buttonText="Create Exam"
+                onClick={() => setOpenAddExam(true)}
+                bgColor="linear-gradient(135deg, #4CAF50, #81C784)"
+              />
           </Grid>
         );
       case "courses":
@@ -115,7 +111,6 @@ function InstructorDashboard() {
             {error}
           </Typography>
         )}
-        {/* Top navigation: show Back button if not in overview */}
         {currentView !== "overview" && (
           <Box sx={{ mb: 2 }}>
             <Button variant="outlined" onClick={handleBack}>
@@ -123,9 +118,18 @@ function InstructorDashboard() {
             </Button>
           </Box>
         )}
-        {/* Dynamic content area */}
         {renderContent()}
       </Box>
+      <EnhancedAddExamDialog
+        open={openAddExam}
+        onClose={() => setOpenAddExam(false)}
+        onAddExam={async (examData) => {
+          const newExam = await api.instructor.createExam(examData);
+          await loadExams();
+          return newExam.id;
+        }}
+        courses={myCourses}
+      />
     </DashboardLayout>
   );
 }
