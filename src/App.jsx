@@ -43,22 +43,6 @@ function App() {
             }
           />
           <Route
-            path="/instructor/courses"
-            element={
-              <ProtectedRoute allowedRole="INSTRUCTOR">
-                <ManageCourses />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId"
-            element={
-              <ProtectedRoute allowedRole="INSTRUCTOR">
-                <CourseDetails />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/student/dashboard"
             element={
               <ProtectedRoute allowedRole="STUDENT">

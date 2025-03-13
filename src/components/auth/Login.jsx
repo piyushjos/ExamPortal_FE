@@ -85,7 +85,7 @@ function Login() {
             navigate('/admin/dashboard');
             break;
           case 'INSTRUCTOR':
-            navigate('/instructor/dashboard');
+            navigate('/instructor');
             break;
           case 'STUDENT':
             navigate('/student/dashboard');
